@@ -1,34 +1,37 @@
-#Goal : I have ton lint , build , test , code for 
-#frontend and backend then push image to docker 
+# Goal: lint, build and test frontend and backend, then push images to Docker
 
 name: ci
 
 on:
   push:
-    branches:[advnaced]
+    branches: [advanced]
 
 jobs:
   frontend:
+    runs-on: ubuntu-latest
     steps:
-      - name: checkout the code
-        uses: actions/checkout@v7
-      
-      - name: frontend linter
-        uses: action/setup-node@v6
-          with:
-          node-version: '22' # Or match your project's LTS version
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install npm package 
-        uses: npm Install
+      - name: Install npm packages
+        run: npm ci
         working-directory: frontend
 
       - name: Run linter
         run: npm run lint
         working-directory: frontend
 
-      - name: Run test
+      - name: Run tests
         run: npm run test
-        working-directory : frontend
-        
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
