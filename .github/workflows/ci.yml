@@ -1,4 +1,4 @@
-# Goal: lint, build and test frontend and backend, then push images to Docker
+# Goal: lint, build and test frontend and backend, then push images to Docker and deploy
 
 name: ci
 
@@ -51,47 +51,47 @@ jobs:
           tags: |
             ${{ vars.DOCKERHUB_USERNAME }}/devboard_frontend:latest
             ${{ vars.DOCKERHUB_USERNAME }}/devboard_frontend:${{ github.sha }}
-  
+
   backend:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
-          go-version-file: 'go.mod'
-          cache-dependency-path: go.sum
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
 
-       - name: Run Go Formatter
-         run: go fmt
-         working-directory: backend 
-
-      - name: Run Go Vet
-        run: go vet
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
         working-directory: backend
 
-      - name: Run Tests
-        run: go test 
+      - name: Run go vet
+        run: go vet ./...
         working-directory: backend
 
-      - name: Docker Setup [Login]
-        uses: docker/login-action@v4
-          with:
-             username: ${{ vars.DOCKERHUB_USERNAME }}
-             password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Run tests
+        run: go test ./...
+        working-directory: backend
 
-      - name: Docker Build and Push
-        uses: docker/build-push-action@v7
-          with:
-            context: ./backend
-            push: true
-            tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
-    deploy:
-        needs: [frontend,backend]
-        uses: ./.github/workflows/cd.yml
-        secrets: inherit
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:${{ github.sha }}
+
+  deploy:
+    needs: [frontend, backend]
+    uses: ./.github/workflows/cd.yml
+    secrets: inherit
