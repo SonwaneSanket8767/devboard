@@ -35,3 +35,16 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: frontend
+
+      - name: Docker login
+        uses: docker/login-actions@v4
+          with:
+            username: ${{vars.Dockerhub_Usernme}}
+            password: ${{vars.Dockerhub_Tocken}}
+
+      - name: docker build and push
+        uses: docker/nuild-push-action@v7
+          with:
+            push: true
+            tags: ${{vars.Dockerhub_Usernme}}/devboard_fronted:latest
+            context: ./frontend/dockerfile.multistage
